@@ -176,8 +176,9 @@
             const [activeAlarms, setActiveAlarms] = useState([]);
             const [editingMed, setEditingMed] = useState(null);
             const [historial, setHistorial] = useState([]);
+            const [audioContextRef, setAudioContextRef] = useState(null);
+            const [oscillatorRef, setOscillatorRef] = useState(null);
             const [alarmsChecked, setAlarmsChecked] = useState(new Set());
-            const [alarmSound, setAlarmSound] = useState(null);
 
             useEffect(() => {
                 const timer = setInterval(() => {
@@ -211,11 +212,6 @@
 
             const playAlarmSound = () => {
                 try {
-                    // Detener sonido anterior si existe
-                    if (alarmSound) {
-                        alarmSound.context.close();
-                    }
-                    
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     const oscillator = audioContext.createOscillator();
                     const gainNode = audioContext.createGain();
@@ -227,52 +223,16 @@
                     oscillator.type = 'sine';
                     
                     gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
                     
                     oscillator.start(audioContext.currentTime);
-                    
-                    // Guardar referencia para poder detenerlo después
-                    setAlarmSound({ oscillator, context: audioContext, gainNode });
-                    
-                    // Hacer que el sonido se repita cada segundo
-                    const interval = setInterval(() => {
-                        try {
-                            const osc = audioContext.createOscillator();
-                            const gain = audioContext.createGain();
-                            osc.connect(gain);
-                            gain.connect(audioContext.destination);
-                            osc.frequency.value = 800;
-                            osc.type = 'sine';
-                            gain.gain.setValueAtTime(0.3, audioContext.currentTime);
-                            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                            osc.start(audioContext.currentTime);
-                            osc.stop(audioContext.currentTime + 0.3);
-                        } catch (e) {
-                            clearInterval(interval);
-                        }
-                    }, 1000);
-                    
-                    setAlarmSound({ oscillator, context: audioContext, gainNode, interval });
+                    oscillator.stop(audioContext.currentTime + 0.5);
+
+                    // Guardar referencias para poder detenerlo después
+                    setAudioContextRef(audioContext);
+                    setOscillatorRef(oscillator);
                 } catch (e) {
                     console.log('Audio no disponible');
-                }
-            };
-            
-            const stopAlarmSound = () => {
-                if (alarmSound) {
-                    try {
-                        if (alarmSound.interval) {
-                            clearInterval(alarmSound.interval);
-                        }
-                        if (alarmSound.oscillator) {
-                            alarmSound.oscillator.stop();
-                        }
-                        if (alarmSound.context) {
-                            alarmSound.context.close();
-                        }
-                    } catch (e) {
-                        console.log('Error deteniendo sonido');
-                    }
-                    setAlarmSound(null);
                 }
             };
 
@@ -282,10 +242,31 @@
             };
 
             const handleTaken = () => {
+                // Detener el sonido si está sonando
+                if (oscillatorRef) {
+                    try {
+                        oscillatorRef.stop(); // Detiene el oscilador
+                    } catch (e) {
+                    // Puede fallar si ya se detuvo, es normal
+                    }
+                }
+                if (audioContextRef) {
+                    try {
+                        audioContextRef.close(); // Cierra el contexto de audio
+                    } catch (e) {
+                    // Puede fallar si ya se cerró, es normal
+                    }
+                }
+    
+                // Limpiar referencias
+                setOscillatorRef(null);
+                setAudioContextRef(null);
+
+                // Registrar en historial
                 const registro = {
-                    medicamento: selectedMed.name,
-                    fecha: currentTime.toLocaleDateString('es-CO'),
-                    hora: currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+                        medicamento: selectedMed.name,
+                        fecha: currentTime.toLocaleDateString('es-CO'),
+                        hora: currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
                 };
                 setHistorial(prev => [registro, ...prev].slice(0, 10));
                 setActiveAlarms(prev => prev.filter(a => a.id !== selectedMed.id));
