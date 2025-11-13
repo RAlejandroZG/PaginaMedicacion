@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recordatorio de Medicamentos - Ingeniero Civil</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const medications = [
+            {
+                name: "Etanercept",
+                via: "Oral",
+                cantidad: "50 MG semanal",
+                horario: "Lunes 8:00 AM",
+                beneficio: "Reduce la inflamación y el dolor en enfermedades autoinmunes como la artritis reumatoide, mejorando la movilidad y calidad de vida.",
+                frase: "Cada dosis es un paso hacia el bienestar y una vida con menos dolor."
+            },
+            {
+                name: "Metotrexato",
+                via: "Oral",
+                cantidad: "17.5 mg semanal",
+                horario: "Martes 8:00 AM",
+                beneficio: "Controla la respuesta inmunitaria excesiva, ayuda a disminuir el daño articular y la fatiga asociada a enfermedades inflamatorias.",
+                frase: "Tu cuerpo puede sanar cuando le das la oportunidad de hacerlo con constancia y paciencia."
+            },
+            {
+                name: "Etoricoxib",
+                via: "Oral",
+                cantidad: "90 mg al día",
+                horario: "Todos los días 9:00 AM",
+                beneficio: "Alivia el dolor y la inflamación, especialmente en articulaciones, permitiendo mayor facilidad para moverse y realizar actividades cotidianas.",
+                frase: "Menos dolor, más movimiento, más vida."
+            },
+            {
+                name: "Ácido Fólico",
+                via: "Oral",
+                cantidad: "1 mg al día",
+                horario: "Todos los días 8:30 AM",
+                beneficio: "Favorece la formación de células nuevas y protege frente a efectos secundarios de otros tratamientos como el metotrexato.",
+                frase: "Pequeñas dosis que fortalecen grandes procesos dentro de ti."
+            },
+            {
+                name: "Diclofenaco Gel",
+                via: "Tópica",
+                cantidad: "1 vez al día",
+                horario: "Todos los días 7:00 PM",
+                beneficio: "Calma el dolor localizado y reduce la inflamación muscular o articular directamente donde se aplica.",
+                frase: "El alivio comienza justo donde lo necesitas."
+            },
+            {
+                name: "Valsartán/Amlodipino",
+                via: "Oral",
+                cantidad: "1 tableta al día",
+                horario: "Todos los días 7:00 AM",
+                beneficio: "Controla la presión arterial, protege el corazón y mejora la circulación, ayudando a prevenir complicaciones cardiovasculares.",
+                frase: "Cuidar tu corazón es cuidar cada latido de tu vida."
+            },
+            {
+                name: "Dapagliflozina",
+                via: "Oral",
+                cantidad: "10 mg al día",
+                horario: "Todos los días 7:30 AM",
+                beneficio: "Ayuda a controlar los niveles de azúcar en sangre, protege la función renal y mejora la salud cardiovascular.",
+                frase: "Tu disciplina hoy es tu energía y equilibrio de mañana."
+            }
+        ];
+
+        // Iconos SVG simples
+        const ClockIcon = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                <path strokeLinecap="round" strokeWidth="2" d="M12 6v6l4 2"/>
+            </svg>
+        );
+
+        const CheckIcon = () => (
+            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4"/>
+            </svg>
+        );
+
+        const AlertIcon = () => (
+            <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" strokeWidth="2"/>
+                <path strokeLinecap="round" strokeWidth="2" d="M12 8v4m0 4h.01"/>
+            </svg>
+        );
+
+        const CoffeeIcon = () => (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h1a4 4 0 010 8h-1m-8 4h6a4 4 0 004-4V8a4 4 0 00-4-4H9a4 4 0 00-4 4v8a4 4 0 004 4z"/>
+            </svg>
+        );
+
+        const RulerIcon = () => (
+            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+        );
+
+        function MedicationApp() {
+            const [currentView, setCurrentView] = useState('list');
+            const [selectedMed, setSelectedMed] = useState(null);
+            const [currentTime, setCurrentTime] = useState(new Date());
+
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setCurrentTime(new Date());
+                }, 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const handleAlarm = (med) => {
+                setSelectedMed(med);
+                setCurrentView('alarm');
+            };
+
+            const handleTaken = () => {
+                setCurrentView('message');
+            };
+
+            const handleBack = () => {
+                setCurrentView('list');
+                setSelectedMed(null);
+            };
+
+            if (currentView === 'alarm') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-4 flex items-center justify-center">
+                        <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 border-4 border-amber-800 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 opacity-5 text-9xl">☕</div>
+                            <div className="absolute bottom-0 left-0 opacity-5 text-9xl">📐</div>
+                            
+                            <div className="text-center mb-8">
+                                <div className="flex justify-center mb-4 text-red-600 animate-pulse">
+                                    <AlertIcon />
+                                </div>
+                                <h1 className="text-5xl font-bold text-amber-900 mb-4">¡Hora de su Medicamento!</h1>
+                                <p className="text-3xl text-gray-700">
+                                    {currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-amber-100 to-orange-100 p-8 rounded-2xl border-3 border-amber-700 mb-8">
+                                <h2 className="text-4xl font-bold text-amber-900 mb-4">{selectedMed.name}</h2>
+                                <div className="space-y-3 text-2xl text-gray-800">
+                                    <p><strong>Dosis:</strong> {selectedMed.cantidad}</p>
+                                    <p><strong>Vía:</strong> {selectedMed.via}</p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleTaken}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white text-3xl font-bold py-6 rounded-2xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-3"
+                            >
+                                <CheckIcon />
+                                Ya tomé mi medicamento
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (currentView === 'message') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-4 flex items-center justify-center">
+                        <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8 border-4 border-green-700 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 opacity-10 text-9xl">☕</div>
+                            <div className="absolute bottom-0 left-0 opacity-10 text-9xl">✓</div>
+                            
+                            <div className="text-center mb-8">
+                                <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+                                    <div className="text-white">
+                                        <CheckIcon />
+                                    </div>
+                                </div>
+                                <h1 className="text-5xl font-bold text-green-800 mb-6">¡Excelente trabajo!</h1>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-green-100 to-emerald-100 p-8 rounded-2xl border-3 border-green-600 mb-6">
+                                <h2 className="text-3xl font-bold text-green-900 mb-4">Beneficios de {selectedMed.name}:</h2>
+                                <p className="text-2xl text-gray-800 leading-relaxed mb-6">
+                                    {selectedMed.beneficio}
+                                </p>
+                                <div className="bg-white p-6 rounded-xl border-2 border-green-400">
+                                    <p className="text-2xl italic text-green-800 font-semibold text-center">
+                                        "{selectedMed.frase}"
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleBack}
+                                className="w-full bg-amber-700 hover:bg-amber-800 text-white text-3xl font-bold py-6 rounded-2xl transition-all transform hover:scale-105 shadow-lg"
+                            >
+                                Volver al inicio
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-stone-100 via-amber-50 to-orange-50 p-4">
+                    <div className="max-w-6xl mx-auto mb-8 bg-gradient-to-r from-amber-800 to-orange-900 rounded-3xl shadow-2xl p-8 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 opacity-20 text-9xl">📐</div>
+                        <div className="absolute bottom-0 left-0 opacity-20 text-9xl">☕</div>
+                        <div className="relative z-10 flex items-center justify-between flex-wrap gap-4">
+                            <div>
+                                <h1 className="text-5xl font-bold mb-3 flex items-center gap-4">
+                                    <RulerIcon />
+                                    Control de Medicamentos
+                                </h1>
+                                <p className="text-2xl flex items-center gap-2">
+                                    <CoffeeIcon />
+                                    Sistema personalizado para su bienestar
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <div className="flex justify-end mb-2">
+                                    <ClockIcon />
+                                </div>
+                                <p className="text-3xl font-bold">
+                                    {currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                                <p className="text-xl">
+                                    {currentTime.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-amber-800">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-gradient-to-r from-amber-700 to-orange-800 text-white">
+                                        <th className="p-6 text-left text-2xl font-bold border-r-2 border-amber-900">MEDICAMENTO</th>
+                                        <th className="p-6 text-left text-2xl font-bold border-r-2 border-amber-900">VÍA DE ADMINISTRACIÓN</th>
+                                        <th className="p-6 text-left text-2xl font-bold border-r-2 border-amber-900">CANTIDAD</th>
+                                        <th className="p-6 text-left text-2xl font-bold">ACCIÓN</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {medications.map((med, index) => (
+                                        <tr 
+                                            key={index}
+                                            className={`${index % 2 === 0 ? 'bg-amber-50' : 'bg-white'} border-b-2 border-amber-200 hover:bg-orange-100 transition-colors`}
+                                        >
+                                            <td className="p-6 text-2xl font-semibold text-gray-800 border-r-2 border-amber-200">
+                                                {med.name}
+                                            </td>
+                                            <td className="p-6 text-2xl text-gray-700 border-r-2 border-amber-200">
+                                                {med.via}
+                                            </td>
+                                            <td className="p-6 text-2xl text-gray-700 border-r-2 border-amber-200">
+                                                {med.cantidad}
+                                            </td>
+                                            <td className="p-6">
+                                                <button
+                                                    onClick={() => handleAlarm(med)}
+                                                    className="bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white text-xl font-bold py-4 px-8 rounded-xl transition-all transform hover:scale-105 shadow-lg"
+                                                >
+                                                    Simular Alarma
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="max-w-6xl mx-auto mt-8 text-center text-gray-600 text-xl">
+                        <p className="flex items-center justify-center gap-2 flex-wrap">
+                            <CoffeeIcon />
+                            Desarrollado con dedicación para su salud y bienestar
+                            <RulerIcon />
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<MedicationApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
