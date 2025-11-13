@@ -176,6 +176,8 @@
             const [activeAlarms, setActiveAlarms] = useState([]);
             const [editingMed, setEditingMed] = useState(null);
             const [historial, setHistorial] = useState([]);
+            const [audioContextRef, setAudioContextRef] = useState(null);
+            const [oscillatorRef, setOscillatorRef] = useState(null);
             const [alarmsChecked, setAlarmsChecked] = useState(new Set());
 
             useEffect(() => {
@@ -225,6 +227,10 @@
                     
                     oscillator.start(audioContext.currentTime);
                     oscillator.stop(audioContext.currentTime + 0.5);
+
+                    // Guardar referencias para poder detenerlo después
+                    setAudioContextRef(audioContext);
+                    setOscillatorRef(oscillator);
                 } catch (e) {
                     console.log('Audio no disponible');
                 }
@@ -236,10 +242,31 @@
             };
 
             const handleTaken = () => {
+                // Detener el sonido si está sonando
+                if (oscillatorRef) {
+                    try {
+                        oscillatorRef.stop(); // Detiene el oscilador
+                    } catch (e) {
+                    // Puede fallar si ya se detuvo, es normal
+                    }
+                }
+                if (audioContextRef) {
+                    try {
+                        audioContextRef.close(); // Cierra el contexto de audio
+                    } catch (e) {
+                    // Puede fallar si ya se cerró, es normal
+                    }
+                }
+    
+                // Limpiar referencias
+                setOscillatorRef(null);
+                setAudioContextRef(null);
+
+                // Registrar en historial
                 const registro = {
-                    medicamento: selectedMed.name,
-                    fecha: currentTime.toLocaleDateString('es-CO'),
-                    hora: currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+                        medicamento: selectedMed.name,
+                        fecha: currentTime.toLocaleDateString('es-CO'),
+                        hora: currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
                 };
                 setHistorial(prev => [registro, ...prev].slice(0, 10));
                 setActiveAlarms(prev => prev.filter(a => a.id !== selectedMed.id));
